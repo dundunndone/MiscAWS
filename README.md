@@ -1,2 +1,2 @@
 # MiscAWS
- Repo for misc. AWS templates, event rules, and more.
+ Repo for various AWS templates, event rules, etc.
