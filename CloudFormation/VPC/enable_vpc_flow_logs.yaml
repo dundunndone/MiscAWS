@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: 'Enables VPC flow logs to CloudWatch Logs'
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: Flow Logs Parameters
+        Parameters:
+          - RetentionInDays
+          - TrafficType
+Parameters:
+  RetentionInDays:
+    Description: Select number of days you want to retain log events.
+    Type: Number
+    Default: 90
+    AllowedValues:
+      - 30
+      - 60
+      - 90
+      - 120
+      - 150
+      - 180
+      - 365
+  VPC:
+    Type: 'AWS::EC2::VPC::Id'
+  TrafficType:
+    Description: The type of traffic to log.
+    Type: String
+    Default: REJECT
+    AllowedValues:
+      - ACCEPT
+      - REJECT
+      - ALL
+Resources:
+  Role:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - vpc-flow-logs.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: flowlogs-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                  - 'logs:DescribeLogGroups'
+                  - 'logs:DescribeLogStreams'
+                Resource: '*'
+  LogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      RetentionInDays: !Ref RetentionInDays
+  FlowLog:
+    Type: 'AWS::EC2::FlowLog'
+    Properties:
+      DeliverLogsPermissionArn: !GetAtt 
+        - Role
+        - Arn
+      LogGroupName: !Ref LogGroup
+      ResourceId: !Ref VPC
+      ResourceType: VPC
+      TrafficType: !Ref TrafficType
+Outputs:
+  TemplateID:
+    Description: Template id.
+    Value: vpc/vpc-flowlog
+  LogGroupName:
+    Description: >-
+      Name of the CloudWatch log group to publish your flow logs.
+    Value: !Ref LogGroup
+  LogGroupARN:
+    Description: >-
+      ARN of the CloudWatch log group to publish your flow logs.
+    Value: !GetAtt 
+      - LogGroup
+      - Arn
